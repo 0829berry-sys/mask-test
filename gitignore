@@ -1,0 +1,17 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# SAM 模型權重（動輒數百 MB ~ 2GB+，不該進 git；README 已附下載說明）
+checkpoints/
+*.pth
+
+# 執行時產生的批次匯出結果（研究資料，因人而異，不該進版控）
+output/
+
+# Streamlit 快取
+.streamlit/
+
+# OS
+.DS_Store
