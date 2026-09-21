@@ -24,15 +24,24 @@ OpenCV GrabCut 作為免下載模型的輕量備援引擎（適合快速產出�
 
 ## 2. 安裝
 
-```bash
-# 建議使用虛擬環境
-python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+**兩種安裝方式，看你要在哪裡跑：**
 
-pip install -r requirements.txt
-```
+- **本機（含 SAM）**：
+  ```bash
+  python -m venv venv
+  source venv/bin/activate        # Windows: venv\Scripts\activate
+  pip install -r requirements-sam.txt
+  ```
+- **雲端部署（如 Streamlit Community Cloud）或只想用 GrabCut**：
+  ```bash
+  pip install -r requirements.txt
+  ```
+  `requirements.txt` 刻意不含 torch / segment-anything——torch 預設會連著一整套 CUDA
+  工具鏈（數 GB）一起裝，這在免費、無 GPU 的雲端環境上很容易把資源額度榨乾、
+  導致 app 起不來或跑得極慢。雲端版預設只用 GrabCut 引擎，仍可完整使用畫筆/橡皮擦/
+  批次匯出等功能，只是初始遮罩用 GrabCut 而非 SAM 產生。
 
-### 2.1 下載 SAM 模型權重（若使用 SAM 引擎）
+### 2.1 下載 SAM 模型權重（僅本機 SAM 引擎需要）
 
 至 Meta 官方 Segment Anything repo 下載 checkpoint（三種大小任選一種，`vit_b` 最快最小，建議先用這個）：
 
@@ -45,10 +54,16 @@ pip install -r requirements.txt
 或在側邊欄輸入你自己的存放路徑。
 
 若你的 Windows 桌機有 NVIDIA GPU，安裝對應 CUDA 版 PyTorch 可大幅加速（到
-[pytorch.org](https://pytorch.org/get-started/locally/) 依你的 CUDA 版本取得安裝指令，取代
-requirements.txt 中的 CPU 版 `torch`）；側邊欄「運算裝置」選 `cuda` 即可。
+[pytorch.org](https://pytorch.org/get-started/locally/) 依你的 CUDA 版本取得安裝指令，
+安裝完成後再跑 `pip install -r requirements-sam.txt` 即可，torch 已存在不會被覆蓋）；
+沒有 GPU 則建議先裝 CPU 版（小很多、快很多）：
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+pip install -r requirements-sam.txt
+```
+側邊欄「運算裝置」選 `cuda`／`cpu` 對應即可。
 
-**不想安裝 SAM/torch？** 側邊欄分割引擎切換為「GrabCut」即可完全跳過本節，
+**不想安裝 SAM/torch？** 側邊欄分割引擎切換為「GrabCut」即可完全跳過本節（雲端部署已預設如此），
 GrabCut 已內建於 `opencv-python-headless`，免額外下載模型。
 
 ### 2.2 HEIC/HEIF 支援
@@ -96,6 +111,19 @@ streamlit run app.py
 `streamlit>=1.53`）。若你是从舊版專案升級上來，重新 `pip install -r requirements.txt`
 （或在 Streamlit Cloud 上點 "Reboot app" 讓它重新安裝依賴）即可；若 Streamlit Cloud
 的套件快取沒更新，可以到 app 的 Manage app → 右上角選單 → Clear cache 後再 reboot。
+
+**部署到 Streamlit Cloud 時 build 很久、或 app 起不來／跑一半崩潰**：
+若你的環境裝了 torch + segment-anything，torch 在 Linux 上預設會一併抓進完整 CUDA
+工具鏈（nvidia-cublas、cudnn、triton…等，加起來數 GB），而 Streamlit Community Cloud
+免費方案完全沒有 GPU、資源額度也有限，裝這一大包很容易把額度榨乾、導致 app 不穩定
+（舊版本的本專案把 SAM 依賴直接寫進單一 `requirements.txt`，就會踩到這個問題）。
+目前版本已拆成兩個檔案：**雲端部署請只用 `requirements.txt`**（不含 SAM，僅 GrabCut
+引擎），本機要用 SAM 才裝 `requirements-sam.txt`。
+
+**畫面出現一堆 `use_container_width` 的棄用警告**：
+這是 Streamlit 自己的 API 改動（`use_container_width` 正在被 `width="stretch"`／
+`width="content"` 取代），純粹是文字警告、不影響功能；目前版本的 `app.py` 已經
+全面改用新的 `width=` 參數，不會再出現這個警告。
 
 ## 6. 已知限制與可擴充方向
 

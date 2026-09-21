@@ -1,4 +1,4 @@
-# 核心
+# 核心（Streamlit Cloud 部署用；只含 GrabCut 引擎，不含 SAM/torch）
 streamlit>=1.53,<2.0
 streamlit-drawable-canvas[image]>=0.12,<0.14
 numpy>=1.24
@@ -8,6 +8,7 @@ Pillow>=10.0
 # HEIC/HEIF 讀取支援（選用；不需要可移除，但上傳 .heic 檔時會失敗）
 pillow-heif>=0.15
 
-# SAM 分割引擎（若只使用 GrabCut 引擎可省略以下兩者）
-torch>=2.1          # CPU 版即可；若有 NVIDIA GPU，改用對應 CUDA 版 (見 README)
-segment-anything @ git+https://github.com/facebookresearch/segment-anything.git
+# 想在本機用 SAM 引擎？不要裝這份，改裝 requirements-sam.txt（見 README）。
+# torch 預設會抓含完整 CUDA 工具鏈的版本（數 GB），在 Streamlit Community Cloud
+# 這種免費、無 GPU 的環境上非常容易把資源額度榨乾、導致 app 起不來，
+# 所以本檔刻意不含 torch / segment-anything，雲端部署預設只用 GrabCut。

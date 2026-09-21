@@ -141,7 +141,14 @@ def get_display_image(pil_img: Image.Image) -> tuple[Image.Image, float]:
 @st.cache_resource(show_spinner="正在載入 SAM 模型（首次載入較久）…")
 def load_sam_predictor(checkpoint_path: str, model_type: str, device: str):
     """載入並快取 SAM predictor。checkpoint_path / model_type / device 任一改變都會觸發重新載入。"""
-    from segment_anything import SamPredictor, sam_model_registry
+    try:
+        from segment_anything import SamPredictor, sam_model_registry
+    except ImportError as e:
+        raise RuntimeError(
+            "未安裝 SAM 所需套件（torch / segment-anything）。"
+            "本機使用請改安裝 requirements-sam.txt；雲端部署預設不含此套件，"
+            "請改用 GrabCut 引擎。"
+        ) from e
 
     sam = sam_model_registry[model_type](checkpoint=checkpoint_path)
     sam.to(device=device)
@@ -352,7 +359,9 @@ st.sidebar.header("⚙️ 分割引擎設定")
 engine = st.sidebar.radio(
     "分割引擎",
     ["SAM（高精準度，需下載模型檔）", "GrabCut（內建，免安裝模型，適合快速草稿）"],
-    index=0,
+    index=1,
+    help="雲端部署（如 Streamlit Cloud）預設只裝了 GrabCut 所需的套件；"
+         "要用 SAM 請在本機安裝 requirements-sam.txt，詳見 README。",
 )
 
 sam_predictor = None
@@ -368,8 +377,11 @@ if engine.startswith("SAM"):
         device = st.selectbox("運算裝置", ["cpu", "cuda"], index=0,
                                help="若本機有 NVIDIA GPU 且已安裝對應 CUDA 版 PyTorch，選 cuda 可大幅加速")
         if Path(checkpoint_path).exists():
-            sam_predictor = load_sam_predictor(checkpoint_path, model_type, device)
-            st.success("模型已載入")
+            try:
+                sam_predictor = load_sam_predictor(checkpoint_path, model_type, device)
+                st.success("模型已載入")
+            except RuntimeError as e:
+                st.error(str(e))
         else:
             st.warning("尚未找到 checkpoint 檔案，請確認路徑，或改用 GrabCut 引擎")
 
@@ -410,7 +422,7 @@ for fname, rec in st.session_state.images.items():
         st.image(thumb)
     with cols[1]:
         badge = f":{'green' if rec.status=='done' else 'orange' if rec.status=='in_progress' else 'gray'}[{STATUS_LABELS[rec.status]}]"
-        if st.button(f"{fname}\n{badge}", key=f"select_{fname}", use_container_width=True):
+        if st.button(f"{fname}\n{badge}", key=f"select_{fname}", width="stretch"):
             st.session_state.current = fname
 
 # =====================================================================================
@@ -498,7 +510,7 @@ if drawing_mode == "point" and canvas_result.json_data is not None:
 
         rec.status = "in_progress"
         with btn_col1:
-            if st.button("✅ 加入目前物件至遮罩", use_container_width=True):
+            if st.button("✅ 加入目前物件至遮罩", width="stretch"):
                 push_history(rec)
                 rec.mask = rec.mask | candidate_mask
                 rec.pending_points, rec.pending_logits = [], None
@@ -512,15 +524,15 @@ else:
     rec_candidate = None
 
 with btn_col2:
-    if st.button("↩️ 復原 (Undo)", use_container_width=True, disabled=not rec.history):
+    if st.button("↩️ 復原 (Undo)", width="stretch", disabled=not rec.history):
         undo(rec)
         st.rerun()
 with btn_col3:
-    if st.button("↪️ 重做 (Redo)", use_container_width=True, disabled=not rec.redo):
+    if st.button("↪️ 重做 (Redo)", width="stretch", disabled=not rec.redo):
         redo_action(rec)
         st.rerun()
 with btn_col4:
-    if st.button("🧹 清空目前點選提示", use_container_width=True):
+    if st.button("🧹 清空目前點選提示", width="stretch"):
         rec.pending_points, rec.pending_logits = [], None
         rec.stroke_session += 1
         st.rerun()
@@ -528,7 +540,7 @@ with btn_col4:
 # ---- 畫筆 / 橡皮擦邏輯 ----
 if drawing_mode == "freedraw" and canvas_result.image_data is not None:
     with btn_col5:
-        if st.button("🖌️ 套用目前筆畫", use_container_width=True):
+        if st.button("🖌️ 套用目前筆畫", width="stretch"):
             stroke_mask = stroke_layer_to_mask(canvas_result.image_data, scale, (h, w))
             if stroke_mask.any():
                 push_history(rec)
@@ -554,18 +566,18 @@ elif view_mode == "最終選擇性上色預覽":
 else:
     preview = np.stack([preview_source * 255] * 3, axis=-1).astype(np.uint8)
 
-st.image(preview, caption="即時預覽（依原始解析度運算，畫布顯示已縮放僅為互動用）", use_container_width=True)
+st.image(preview, caption="即時預覽（依原始解析度運算，畫布顯示已縮放僅為互動用）", width="stretch")
 st.caption(f"目前遮罩覆蓋率：{100.0 * rec.mask.sum() / rec.mask.size:.2f}%")
 
 nav_col1, nav_col2, _ = st.columns([1, 1, 3])
 names = list(st.session_state.images.keys())
 idx = names.index(cur_name)
 with nav_col1:
-    if st.button("⬅️ 上一張", disabled=idx == 0, use_container_width=True):
+    if st.button("⬅️ 上一張", disabled=idx == 0, width="stretch"):
         st.session_state.current = names[idx - 1]
         st.rerun()
 with nav_col2:
-    if st.button("完成並下一張 ➡️", use_container_width=True):
+    if st.button("完成並下一張 ➡️", width="stretch"):
         rec.status = "done"
         if idx + 1 < len(names):
             st.session_state.current = names[idx + 1]

@@ -1,0 +1,20 @@
+# 本機使用 SAM 引擎的額外依賴。安裝方式：
+#   pip install -r requirements-sam.txt
+# 這會先裝好 requirements.txt 的核心套件，再加裝 torch + segment-anything。
+#
+# 注意：直接 `pip install torch` 在 Windows/Linux 上預設會抓含完整 CUDA
+# 工具鏈的版本（數 GB）。如果你的 Windows 桌機「沒有」NVIDIA 獨立顯卡，
+# 建議改用 CPU 版（小很多、安裝快很多）：
+#
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   pip install -r requirements-sam.txt
+#
+# 如果「有」NVIDIA GPU 並想要 GPU 加速，到 https://pytorch.org/get-started/locally/
+# 依你的 CUDA 版本取得對應安裝指令，安裝完成後再執行下面這行即可（torch 已安裝，
+# 不會被覆蓋掉）：
+#
+#   pip install -r requirements-sam.txt
+
+-r requirements.txt
+torch>=2.1
+segment-anything @ git+https://github.com/facebookresearch/segment-anything.git
