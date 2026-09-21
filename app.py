@@ -472,6 +472,7 @@ canvas_result = st_canvas(
     width=disp_img.width,
     drawing_mode=drawing_mode,
     point_display_radius=6,
+    return_image_data=True,  # streamlit-drawable-canvas>=0.10 需明確要求才會回傳 image_data
     key=canvas_key,
 )
 

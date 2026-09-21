@@ -87,7 +87,17 @@ streamlit run app.py
 
 ---
 
-## 5. 已知限制與可擴充方向
+## 5. 疑難排解
+
+**部署到 Streamlit Cloud 後出現 `AttributeError` / `image_to_url` 相關錯誤**：
+這是 `streamlit-drawable-canvas` 舊版（0.9.3）與新版 Streamlit 的相容性問題——Streamlit
+把該套件依賴的內部函式搬移了位置。本專案的 `requirements.txt` 已固定使用重寫過、不再依賴
+該內部函式的新版（`streamlit-drawable-canvas[image]>=0.12,<0.14`，需搭配
+`streamlit>=1.53`）。若你是从舊版專案升級上來，重新 `pip install -r requirements.txt`
+（或在 Streamlit Cloud 上點 "Reboot app" 讓它重新安裝依賴）即可；若 Streamlit Cloud
+的套件快取沒更新，可以到 app 的 Manage app → 右上角選單 → Clear cache 後再 reboot。
+
+## 6. 已知限制與可擴充方向
 
 - **資料夾選取**：瀏覽器安全限制下，Streamlit 的檔案上傳僅能「多選檔案」，無法遞迴選取整個
   資料夾樹狀結構；實務上在系統檔案對話框中全選資料夾內檔案即可達到相近效果。
